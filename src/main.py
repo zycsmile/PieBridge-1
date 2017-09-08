@@ -127,7 +127,7 @@ def begin_trans():
                     # 从普通sender下载
                     objects = [] #需要下载的block
                     for i in host.task_status:
-                        if i not in super_core_object and host.task_status[i] == 0:
+                        if (i not in super_core_object) and host.task_status[i] == 0:
                             objects.append(i)
                             
                     index = 0
