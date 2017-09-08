@@ -99,7 +99,7 @@ def begin_trans():
                 if len(host.sender_list) == 0: # 没有sender情况
                     continue
                 else:
-                    mean_sender_bw = host.link.upload_capacity/len(host.sender_list) # 平分host的接收带宽
+                    mean_sender_bw = host.link.download_capacity/len(host.sender_list) # 平分host的接收带宽
                     # 从super core下载
                     super_core_object = []  
                     normal_sender_num = len(host.sender_list) # 除了super core, 其他的sender个数
@@ -149,8 +149,8 @@ def begin_trans():
                             if sender_server.task_status[objects[i]] == 1:
                                 host.task_status[objects[i]] = 1
                                 real_download_obj_num += 1
-                        host.sender_list[sender_id] = download_obj_num
-                        sender_server.receiver_list[(host.super_core_id, host.idc_id, host.id)] = download_obj_num
+                        host.sender_list[sender_id] = real_download_obj_num
+                        sender_server.receiver_list[(host.super_core_id, host.idc_id, host.id)] = real_download_obj_num
 
 
 
