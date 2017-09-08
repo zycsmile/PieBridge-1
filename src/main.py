@@ -5,15 +5,15 @@ import os
 
 import server
 import link
-import block
 import idc
 import supercore
 import util
+import sys
 
-LINK_UPLOAD_CAPACITY = 20 #MB/s
-LINK_DOWNLOAD_CAPACITY = 20 #MB/s
-TASK_SIZE = 10*1024
-BLOCK_SIZE = 2 #MB/S
+LINK_UPLOAD_CAPACITY = 1 #MB/s
+LINK_DOWNLOAD_CAPACITY = 1 #MB/s
+TASK_SIZE = 10*10
+BLOCK_SIZE = 2 #MB
 SCHEDULE_CYCLE = 5 # Second
 PEER_NUM = 3
 
@@ -53,12 +53,16 @@ def set_src_idc(core_id, idc_id):
     super_core = super_core_list[core_id]
     dc = super_core.idc_list[idc_id]
     server_num = len(dc.server_list)
-    average_block_num = TASK_SIZE/server_num # server_num < Task_size
+
+    if TASK_SIZE < server_num:
+        average_block_num = 1
+    else:
+        average_block_num = TASK_SIZE/server_num
 
     for i in range(TASK_SIZE):
-        block_task = block.Block(i, BLOCK_SIZE)
         server_id = i/average_block_num
-        dc.server_list[server_id].add_block(block_task)
+        dc.server_list[server_id].add_block(i) # add i block
+
     for s in dc.server_list:
         s.update_status()
    
@@ -74,12 +78,13 @@ def update_servers_send_recv_list():
     2. 其他机器候选server, 首先看super core有没有数据，如果有，一定从super core上下载，其他的在别的机器上下
     """
     ## super core 先选
-    print "super core selection round"
+    # print "super core selection"
     for super_core in super_core_list:
         dc = super_core.idc_list[0]
         for host in dc.server_list:
             host.update_senders(super_core_list, PEER_NUM, 1)
-    print "others selection round"
+
+    # print "others selection "
     for super_core in super_core_list:
         for i in range(1, len(super_core.idc_list)):
             dc = super_core.idc_list[i]
@@ -103,8 +108,10 @@ def begin_trans():
                     # 从super core下载
                     super_core_object = []  
                     normal_sender_num = len(host.sender_list) # 除了super core, 其他的sender个数
+
                     for sender_id in host.sender_list:
                         if host.super_core_id == sender_id[0] and sender_id[1] == 0:
+                            print (host.super_core_id, host.idc_id, host.id), host.sender_list
                             normal_sender_num -= 1 # 去掉super core
 
                             sender_server = util.get_server(sender_id, super_core_list)
@@ -127,7 +134,7 @@ def begin_trans():
                     # 从普通sender下载
                     objects = [] #需要下载的block
                     for i in host.task_status:
-                        if i not in super_core_object and host.task_status[i] == 0:
+                        if (i not in super_core_object) and host.task_status[i] == 0:
                             objects.append(i)
                             
                     index = 0
@@ -158,6 +165,7 @@ def check_finished():
     """
     判断每个机器是否已经下完了所有的数据
     """
+
     for super_core in super_core_list:
         for dc in super_core.idc_list:
             for host in dc.server_list:
@@ -167,16 +175,27 @@ def check_finished():
     return True
 
 
+def print_status(round_num):
+    print "############### ", round_num, "############### "
+    for super_core in super_core_list:
+        for dc in super_core.idc_list:
+            for host in dc.server_list:
+                print (host.super_core_id, host.idc_id, host.id), host.status
 
 
 if __name__ == "__main__":
     print "init..."
     init()
     print "set src IDC..."
-    set_src_idc(0, 1) # 选择0号super_core的1号IDC为src_IDC.
-
+    set_src_idc(0, 1) # select super core 0 and idc 1 as the src idc.
     print "start data distribution... "
+    round_num = 0
     while check_finished() == 0:
+        print_status(round_num)
+        round_num +=1
         del_inefficient_sender_receiver()
         update_servers_send_recv_list()
+        # print super_core_list[1].idc_list[1].server_list[0].sender_list
         begin_trans()
+        # break
+    print_status(round_num)

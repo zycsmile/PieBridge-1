@@ -1,6 +1,5 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-import block
 import link
 import sys
 import util
@@ -15,7 +14,6 @@ class Server:
         self.super_core_id = core_id
         self.idc_id = idc_id
 
-        self.block_list = {} # blockid: blockinfo
         self.link = link.Link(upload_capacity, download_capacity)
 
         self.task_status = {} # blockid: finished or not(0:1)
@@ -23,9 +21,8 @@ class Server:
         self.sender_list = {} # {(super_core_id, idc_id, server_id): download block info}
         self.receiver_list = {} # {(super_core_id, idc_id, server_id): upload block info}
 
-    def add_block(self, b):
-        self.block_list[b.id] = b
-        self.task_status[b.id] = 1
+    def add_block(self, id):
+        self.task_status[id] = 1
 
     def set_link_capacity(upload_capacity, download_capacity):
         self.link.update_link_capacity(upload_capacity, download_capacity)
@@ -65,6 +62,9 @@ class Server:
                     self.status = 0
                     return
             self.status = 1
+        else:
+            self.status = 1
+
 
     def status_diff(self, task_status):
         score = 0
@@ -88,7 +88,6 @@ class Server:
         - 选sender时需要确认是否对方的receive已经达到上限， 如果receive不够就换下一个server
         """
         if self.status == 1: # 完成任务
-            self.sender_list = {}
             return
 
         if flag == 1:
@@ -161,6 +160,14 @@ class Server:
         删除最慢的sender和receiver
         """
         server_id = (self.super_core_id, self.idc_id, self.id)
+
+        if self.task_status == 1:
+            for i in self.sender_list:
+                sender_server = util.get_server(i, super_core_list)
+                sender_server.del_sender(server_id)
+            self.sender_list = {}
+
+
         if len(self.sender_list) != 0:
             min_value = sys.maxint
             min_index = (-1, -1, -1)
@@ -168,11 +175,10 @@ class Server:
                 if self.sender_list[i] < min_value:
                     min_value = self.sender_list[i]
                     min_index = i
-            if len(self.sender_list) == PEER_NUM:
-                self.del_sender(min_index)
-                receiver_server = util.get_server(min_index, super_core_list)
-                receiver_server.del_receiver(server_id)
-                print "server", server_id, "del sender", min_index, min_value
+            self.del_sender(min_index)
+            receiver_server = util.get_server(min_index, super_core_list)
+            receiver_server.del_receiver(server_id)
+                # print "server", server_id, "del sender", min_index, min_value
         if len(self.receiver_list) != 0:
             min_value = sys.maxint
             min_index = (-1, -1, -1)
@@ -181,11 +187,10 @@ class Server:
                     min_value = self.receiver_list[i]
                     min_index = i
                     
-            if len(self.receiver_list) == PEER_NUM:
-                self.del_receiver(min_index)
-                sender_server = util.get_server(min_index, super_core_list)
-                sender_server.del_sender(server_id)
-                print "server", server_id, "del receiver", min_index, min_value
+            self.del_receiver(min_index)
+            sender_server = util.get_server(min_index, super_core_list)
+            sender_server.del_sender(server_id)
+                # print "server", server_id, "del receiver", min_index, min_value
 
 
 
