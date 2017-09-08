@@ -168,11 +168,11 @@ class Server:
                 if self.sender_list[i] < min_value:
                     min_value = self.sender_list[i]
                     min_index = i
-            if len(self.sender_list) == PEER_NUM:
-                self.del_sender(min_index)
-                receiver_server = util.get_server(min_index, super_core_list)
-                receiver_server.del_receiver(server_id)
-                print "server", server_id, "del sender", min_index, min_value
+            #if len(self.sender_list) == PEER_NUM:
+            self.del_sender(min_index)
+            receiver_server = util.get_server(min_index, super_core_list)
+            receiver_server.del_receiver(server_id)
+            print "server", server_id, "del sender", min_index, min_value
         if len(self.receiver_list) != 0:
             min_value = sys.maxint
             min_index = (-1, -1, -1)
@@ -181,11 +181,11 @@ class Server:
                     min_value = self.receiver_list[i]
                     min_index = i
                     
-            if len(self.receiver_list) == PEER_NUM:
-                self.del_receiver(min_index)
-                sender_server = util.get_server(min_index, super_core_list)
-                sender_server.del_sender(server_id)
-                print "server", server_id, "del receiver", min_index, min_value
+            #if len(self.receiver_list) == PEER_NUM:
+            self.del_receiver(min_index)
+            sender_server = util.get_server(min_index, super_core_list)
+            sender_server.del_sender(server_id)
+            print "server", server_id, "del receiver", min_index, min_value
 
 
 
